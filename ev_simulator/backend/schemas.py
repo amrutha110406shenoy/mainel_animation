@@ -1,6 +1,22 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Literal
 
+# ==================== Legacy Simulation Endpoint ====================
+
+class LegacySimulationRequest(BaseModel):
+    battery_capacity: float
+    current_battery: float
+    charger_power: float
+    ambient_temperature: float
+
+class LegacySimulationResponse(BaseModel):
+    charging_time_minutes: float
+    final_battery_percentage: float
+    battery_temperature_rise: float
+    efficiency_percentage: float
+    energy_loss_kwh: float
+    cost_estimate: float
+
 # ==================== Simulation Endpoint ====================
 
 class ChargeCurveData(BaseModel):

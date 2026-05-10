@@ -18,7 +18,7 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@router.get("/metrics")
+@router.get("/api/metrics")
 async def get_metrics():
     return metrics_store
 

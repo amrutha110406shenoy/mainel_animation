@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from schemas import (
-    SimulationRequest as LegacySimulationRequest,
-    SimulationResponse as LegacySimulationResponse,
-    SimulationRequest, SimulationResponse
+    LegacySimulationRequest,
+    LegacySimulationResponse,
+    SimulationRequest, 
+    SimulationResponse
 )
 from model.charging_simulation import EVChargingSimulator
 from routes.health import update_metrics
@@ -102,7 +103,7 @@ async def run_simulation(request: SimulationRequest):
         raise HTTPException(status_code=500, detail=f"Simulation failed: {str(e)}")
 
 
-@router.post("/simulate/legacy", response_model=LegacySimulationResponse)
+@router.post("/simulate/start", response_model=LegacySimulationResponse)
 async def start_simulation(request: LegacySimulationRequest):
     """
     Legacy simulation endpoint for backward compatibility.
@@ -122,13 +123,27 @@ async def start_simulation(request: LegacySimulationRequest):
         if request.charger_power <= 0:
             raise HTTPException(status_code=400, detail="Charger power must be positive")
 
-        # Run simulation
-        result = simulator.simulate(
-            battery_capacity=request.battery_capacity,
-            current_battery=request.current_battery,
-            charger_power=request.charger_power,
-            ambient_temperature=request.ambient_temperature
+        # Run advanced simulation and map back to legacy response
+        adv_res = simulator.simulate_charging(
+            battery_capacity_kwh=request.battery_capacity,
+            current_soc=request.current_battery / 100.0,
+            target_soc=1.0,  # Legacy always charges to 100%
+            charger_power_kw=request.charger_power,
+            ambient_temp_celsius=request.ambient_temperature,
+            grid_voltage=400.0
         )
+        
+        energy_stored = request.battery_capacity * (1.0 - request.current_battery / 100.0)
+        energy_loss = adv_res["energy_delivered_kWh"] - energy_stored
+        
+        result = {
+            "charging_time_minutes": adv_res["estimated_time_minutes"],
+            "final_battery_percentage": 100.0,
+            "battery_temperature_rise": adv_res["max_battery_temp_celsius"] - request.ambient_temperature,
+            "efficiency_percentage": adv_res["average_efficiency_percent"],
+            "energy_loss_kwh": max(0.0, energy_loss),
+            "cost_estimate": adv_res["cost_estimate_inr"]
+        }
 
         # Update metrics
         try:

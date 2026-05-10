@@ -16,8 +16,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Copy model package
-COPY ../model ./model
+# Copy model package is not needed since it's mounted via docker-compose
+# Or change docker context if you need a standalone build.
+
 
 # Expose port
 EXPOSE 8000
