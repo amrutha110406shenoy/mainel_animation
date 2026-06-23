@@ -98,8 +98,11 @@ def predict(observation: dict) -> int:
 
     if _model_loaded and _model is not None:
         try:
-            action, _ = _model.predict(obs_array, deterministic=True)
-            return int(action)
+            action, _ = _model.predict(obs_array.reshape(1, -1), deterministic=True)
+            action_int = int(np.asarray(action).item())
+            if action_int not in ACTION_NAMES:
+                raise ValueError(f"Invalid action {action_int} predicted by model.")
+            return action_int
         except Exception as e:
             logger.error(f"Model predict failed ({e}), falling back to rule-based")
 
